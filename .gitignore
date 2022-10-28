@@ -1,0 +1,8 @@
+# Ignore files with extension `.class` & `.exe`
+*.exe
+*.o
+*.dll
+
+# dependencies
+/.vscode
+/test.cpp
