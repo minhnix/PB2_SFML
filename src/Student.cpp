@@ -41,6 +41,10 @@ void Student::setName(string name)
 {
   this->name = name;
 }
+bool Student::operator==(const Student &s)
+{
+  return (id == s.id);
+}
 ostream &operator<<(ostream &cout, const Student &student)
 {
   return cout << "id = " << student.id << "\nname = " << student.name << endl;

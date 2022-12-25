@@ -23,157 +23,257 @@ Manage::Manage()
 Manage::~Manage()
 {
 }
-void Manage::Create()
+notification Manage::Create(string id, string name)
 {
-    string id, name;
-    cout << "Nhap thong tin may tinh moi\n";
-    cout << "ID may tinh: ";
-    getline(cin, id);
-    if (listComputer.indexOf(id) != -1)
+    notification notice;
+    if (id == "")
     {
-        cout << "ID may da ton tai\n";
-        return;
+        notice.msg = "Please enter computer id";
+        notice.posX = 220;
+        notice.posY = 240;
     }
-    cout << "Ten may: ";
-    getline(cin, name);
-    Computer computer(id, name, "not_using", "", 0);
-    listComputer.add(computer);
-    dbComputer.Create(computer);
-    cout << "Da tao thanh cong\n";
-}
-void Manage::Update()
-{
-    string id, name;
-    cout << "Nhap thong tin can sua\n";
-    cout << "ID may tinh can sua: ";
-    getline(cin, id);
-    int index = listComputer.indexOf(id);
-    if (index == -1)
+    else if (listComputer.indexOf(id) == -1 && name == "")
     {
-        cout << "May nay khong ton tai\n";
-        return;
+        notice.msg = "Please enter computer name";
+        notice.posX = 200;
+        notice.posY = 240;
     }
-    cout << "Nhap ten moi: ";
-    getline(cin, name);
-    listComputer.at(index).setName(name);
-    dbComputer.Update(index, "name", name.c_str());
-    cout << "Da sua thanh cong\n";
-}
-void Manage::Delete()
-{
-    string id;
-    cout << "Nhap id may muon xoa: ";
-    getline(cin, id);
-    int index = listComputer.indexOf(id);
-    if (index == -1)
+    else if (listComputer.indexOf(id) != -1)
     {
-        cout << "May nay khong ton tai\n";
-        return;
-    }
-    listComputer.removeAt(index);
-    dbComputer.Delete(index);
-    int i = 0;
-    while (i < listRegister.length())
-    {
-        if (listRegister.at(i).getIdComputer() == id)
-        {
-            listRegister.removeAt(i);
-            dbRegister.Delete(i);
-        }
-        else
-            i++;
-    }
-}
-void Manage::Register()
-{
-    cout << "Danh sach cac may tinh chua dang ky\n";
-    for (int i = 0; i < listComputer.length(); i++)
-    {
-        if (listComputer.at(i).getStatus() == "not_using")
-            cout << listComputer.at(i) << endl;
-    }
-    string idComputer, idStudent;
-    cout << "Nhap mssv: ";
-    getline(cin, idStudent);
-    int indexStudent = listStudent.indexOf(idStudent);
-    if (indexStudent == -1)
-    {
-        cout << "Ban chua dang ky. Vui long nhap ten de dang ky: ";
-        string name;
-        getline(cin, name);
-        listStudent.add(Student(idStudent, name));
-        dbStudent.Create(listStudent.at(listStudent.length() - 1));
-        cout << "Ban da dang ky mssv thanh cong\n";
+        notice.msg = "Computer id exists";
+        notice.posX = 270;
+        notice.posY = 240;
     }
     else
     {
-        for (int i = 0; i < listComputer.length(); i++)
+        notice.code = 1;
+        notice.msg = "Create successfully";
+        notice.posX = 250;
+        notice.posY = 240;
+    }
+    if (notice.code)
+    {
+        Computer computer(id, name, "not_using", "", 0);
+        listComputer.add(computer);
+        dbComputer.Create(computer);
+    }
+    return notice;
+}
+notification Manage::Update(string id, string name)
+{
+    notification notice;
+    if (id == "")
+    {
+        notice.msg = "Please enter computer id";
+        notice.posX = 220;
+        notice.posY = 240;
+    }
+    else if (listComputer.indexOf(id) == -1)
+    {
+        notice.msg = "Computer id do not exist";
+        notice.posX = 220;
+        notice.posY = 240;
+    }
+    else if (listComputer.indexOf(id) != -1 && name == "")
+    {
+        notice.msg = "Please enter computer name";
+        notice.posX = 200;
+        notice.posY = 240;
+    }
+    else
+    {
+        notice.code = 1;
+        notice.msg = "Update successfully";
+        notice.posX = 245;
+        notice.posY = 240;
+    }
+    if (notice.code)
+    {
+        int index = listComputer.indexOf(id);
+        listComputer.at(index).setName(name);
+        dbComputer.Update(index, "name", name.c_str());
+    }
+    return notice;
+}
+notification Manage::Delete(string id)
+{
+    notification notice;
+    if (id == "")
+    {
+        notice.msg = "Please enter computer id";
+        notice.posX = 220;
+        notice.posY = 240;
+    }
+    else if (listComputer.indexOf(id) == -1)
+    {
+        notice.msg = "Computer id do not exist";
+        notice.posX = 220;
+        notice.posY = 240;
+    }
+    else
+    {
+        bool used = false;
+        for (int i = 0; i < listRegister.length(); i++)
         {
-            if (idStudent == listComputer.at(i).getIdStudent())
+            if (id == listRegister.at(i).getIdComputer() && listRegister.at(i).getUnRegisteredAt() == 0)
             {
-                cout << "Ban da dang ky may so " << listComputer.at(i).getId() << endl;
-                return;
+                used = true;
+                break;
             }
         }
-    }
-    int indexComputer = 0;
-    while (1)
-    {
-        cout << "Nhap id may tinh can dang ky: ";
-        getline(cin, idComputer);
-        indexComputer = listComputer.indexOf(idComputer);
-        if (indexComputer != -1 && listComputer.at(indexComputer).getStatus() != "using")
-            break; // register successfully
-        if (indexComputer == -1)
-            cout << "May tinh nay khong ton tai\n";
-        else
-            cout << "May nay da dang ky\n"; // exist and using
-    }
-    time_t now = time(0);
-    tm *ltm = localtime(&now);
-    string id = idStudent + idComputer + to_string(now);
-    listRegister.add(Record(idComputer, idStudent, now, 0));
-    dbRegister.Create(listRegister.at(listRegister.length() - 1));
-    listComputer.at(indexComputer).setStatus("using");
-    dbComputer.Update(indexComputer, "status", "using");
-    listComputer.at(indexComputer).setIdStudent(idStudent);
-    dbComputer.Update(indexComputer, "idStudent", idStudent.c_str());
-    cout << "Ban da dang ky thanh cong vao luc " << ltm->tm_hour << ":" << ltm->tm_min << ":" << ltm->tm_sec << endl;
-}
-void Manage::Unregister()
-{
-    cout << "Nhap mssv cua ban: ";
-    string idStudent, idComputer;
-    int indexRegister;
-    getline(cin, idStudent);
-    bool oke = true;
-    for (int i = 0; i < listRegister.length(); i++)
-    {
-        if (idStudent == listRegister.at(i).getIdStudent() && listRegister.at(i).getUnRegisteredAt() == 0)
+        if (!used)
         {
-            oke = false;
-            indexRegister = i;
-            idComputer = listRegister.at(i).getIdComputer();
-            break;
+            notice.msg = "Delete successfully";
+            notice.posX = 255;
+            notice.posY = 240;
+            notice.code = 1;
+        }
+        else
+        {
+            notice.msg = "Computer is being used. Can not delete";
+            notice.posX = 120;
+            notice.posY = 240;
         }
     }
-    if (oke)
+    if (notice.code)
     {
-        cout << "Ban chua dang ky may nao\n";
-        return;
+        int index = listComputer.indexOf(id);
+        listComputer.removeAt(index);
+        dbComputer.Delete(index);
+        int i = 0;
+        while (i < listRegister.length())
+        {
+            if (listRegister.at(i).getIdComputer() == id)
+            {
+                listRegister.removeAt(i);
+                dbRegister.Delete(i);
+            }
+            else
+                i++;
+        }
     }
-    time_t now = time(0);
-    int indexComputer = listComputer.indexOf(idComputer);
-    long long timeUsed = listComputer.at(indexComputer).getTimeUsed() + (now - listRegister.at(indexRegister).getRegisteredAt());
-    listRegister.at(indexRegister).setUnRegisterAt(now);     // update unRegistered time
-    dbRegister.Update(indexRegister, "unRegisteredAt", now); // save database
-    listComputer.at(indexComputer).setTimeUsed(timeUsed);    // update timeUsed Computer
-    dbComputer.Update(indexComputer, "timeUsed", timeUsed);  // save database
-    listComputer.at(indexComputer).setIdStudent("");
-    dbComputer.Update(indexComputer, "idStudent", "");
-    listComputer.at(indexComputer).setStatus("not_using");
-    dbComputer.Update(indexComputer, "status", "not_using");
-    cout << "Ban da huy dang ky thanh cong\n";
+    return notice;
+}
+notification Manage::Register(int i, string id, string name)
+{
+    notification notice;
+    if (id == "")
+    {
+        notice.msg = "Please enter student id";
+        notice.posX = 230;
+        notice.posY = 240;
+    }
+    else if (listStudent.indexOf(id) == -1 && name == "")
+    {
+        notice.msg = "Please enter student name";
+        notice.posX = 210;
+        notice.posY = 240;
+    }
+    else if (listStudent.indexOf(id) != -1 && name != listStudent.at(listStudent.indexOf(id)).getName() && name != "")
+    {
+        notice.msg = "Please check student name";
+        notice.posX = 210;
+        notice.posY = 240;
+    }
+    else
+    {
+        bool used = false;
+        for (int index = 0; index < listComputer.length(); index++)
+            if (id == listComputer.at(index).getIdStudent())
+            {
+                used = true;
+                break;
+            }
+        if (!used)
+        {
+            notice.code = 1;
+            notice.msg = "Register successfully";
+            notice.posX = 240;
+            notice.posY = 240;
+        }
+        else
+        {
+            notice.msg = "Student is using computer";
+            notice.posX = 220;
+            notice.posY = 240;
+        }
+    }
+    if (notice.code == 1)
+    {
+        time_t now = time(0);
+        if (listStudent.indexOf(id) == -1)
+        {
+            listStudent.add(Student(id, name));
+            dbStudent.Create(Student(id, name));
+        }
+        listComputer.at(i).setStatus("using");
+        dbComputer.Update(i, "status", "using");
+        listComputer.at(i).setIdStudent(id);
+        dbComputer.Update(i, "idStudent", id.c_str());
+        listRegister.add(Record(listComputer.at(i).getId(), id, now, 0));
+        dbRegister.Create(Record(listComputer.at(i).getId(), id, now, 0));
+    }
+    return notice;
+}
+notification Manage::Unregister(string id)
+{
+    notification notice;
+    int indexRegister;
+    string idComputer;
+    if (id == "")
+    {
+        notice.msg = "Please enter student id";
+        notice.posX = 230;
+        notice.posY = 240;
+    }
+    else if (listStudent.indexOf(id) == -1)
+    {
+        notice.msg = "Student id do not exist";
+        notice.posX = 230;
+        notice.posY = 240;
+    }
+    else
+    {
+        bool used = false;
+        for (int i = 0; i < listRegister.length(); i++)
+        {
+            if (id == listRegister.at(i).getIdStudent() && listRegister.at(i).getUnRegisteredAt() == 0)
+            {
+                used = true;
+                indexRegister = i;
+                idComputer = listRegister.at(i).getIdComputer();
+                break;
+            }
+        }
+        if (used)
+        {
+            notice.code = 1;
+            notice.msg = "Unregister successfully";
+            notice.posX = 240;
+            notice.posY = 240;
+        }
+        else
+        {
+            notice.msg = "Student is not using computer";
+            notice.posX = 190;
+            notice.posY = 240;
+        }
+    }
+    if (notice.code)
+    {
+        time_t now = time(0);
+        int indexComputer = listComputer.indexOf(idComputer);
+        long long timeUsed = listComputer.at(indexComputer).getTimeUsed() + (now - listRegister.at(indexRegister).getRegisteredAt());
+        listRegister.at(indexRegister).setUnRegisterAt(now);
+        dbRegister.Update(indexRegister, "unRegisteredAt", now);
+        listComputer.at(indexComputer).setTimeUsed(timeUsed);
+        dbComputer.Update(indexComputer, "timeUsed", timeUsed);
+        listComputer.at(indexComputer).setIdStudent("");
+        dbComputer.Update(indexComputer, "idStudent", "");
+        listComputer.at(indexComputer).setStatus("not_using");
+        dbComputer.Update(indexComputer, "status", "not_using");
+    }
+    return notice;
 }
 
 void Manage::ShowComputer(int index)

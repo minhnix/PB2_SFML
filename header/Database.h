@@ -25,12 +25,12 @@ public:
   ~Database();
   int getTotalCol();
   void writer();
-  void Create(T);                                   // Thêm 1 đối tượng T vào database. Ví dụ: dbStudent.Create(Student(id, name)); dbComputer.Create(Computer(id, name, timeUsed))
-  string GetStringDB(int index, const char *field); // lấy ra 1 chuỗi trong database, tại {} thứ index, trường field. dbStudent.GetStringDB(0, "id");
+  void Create(T);
+  string GetStringDB(int index, const char *field);
   long long GetLLDB(int index, const char *field);
-  void Update(int index, const char *field, const char *value); // sửa thằng {} thứ index, trường field, với giá trị mới là value (string) hoặc (long long)
+  void Update(int index, const char *field, const char *value);
   void Update(int index, const char *field, long long value);
-  void Delete(int index); // xoá thằng {} thứ index
+  void Delete(int index);
 };
 template <class T>
 Database<T>::Database(const char *path)

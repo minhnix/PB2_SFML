@@ -61,9 +61,21 @@ void textEnter(Event e, string &select1, string &select2, int &selected)
     default:
       break;
     }
-  if (e.type == Event::TextEntered && e.text.unicode == 13 && selected == SELECT1)
-    selected = SELECT2;
-  if (e.type == Event::TextEntered && e.text.unicode < 128 && e.text.unicode != 13 && e.text.unicode != 8)
+  if (e.type == Event::TextEntered && e.text.unicode == 13)
+    selected = SELECTBUTTONOKE;
+  if (e.type == Event::TextEntered && e.text.unicode == 9)
+    switch (selected)
+    {
+    case SELECT1:
+      selected = SELECT2;
+      break;
+    case SELECT2:
+      selected = SELECTBUTTONOKE;
+      break;
+    default:
+      break;
+    }
+  if (e.type == Event::TextEntered && e.text.unicode < 128 && e.text.unicode != 13 && e.text.unicode != 8 && e.text.unicode != 9)
     switch (selected)
     {
     case SELECT1:
@@ -141,10 +153,10 @@ void Func1()
             line.setPosition((__id.getPosition().x + __id.getGlobalBounds().width + 5), 94);
             line.setFillColor(Color::Black);
             int selected = 1;
-            bool isValid = false;
+            notification notice;
             while (registerWindow.isOpen())
             {
-              isValid = false;
+              notice.code = 0;
               Vector2i posRegister = Mouse::getPosition(registerWindow);
               Time elapsed = clock.getElapsedTime();
               timeRound = int((round(elapsed.asSeconds())));
@@ -190,42 +202,9 @@ void Func1()
                   case SELECTBUTTONOKE:
                     selected = SELECT0;
                     line.setFillColor(Color::Transparent);
-                    if (id == "")
-                    {
-                      message.setString("Please enter student id");
-                      message.setPosition(230, 240);
-                    }
-                    else if (ql.listStudent.indexOf(id) == -1 && name == "")
-                    {
-                      message.setString("Please enter student name");
-                      message.setPosition(210, 240);
-                    }
-                    else if (ql.listStudent.indexOf(id) != -1 && name != ql.listStudent.at(ql.listStudent.indexOf(id)).getName() && name != "")
-                    {
-                      message.setString("Please check student name");
-                      message.setPosition(210, 240);
-                    }
-                    else
-                    {
-                      bool used = false;
-                      for (int index = 0; index < ql.listComputer.length(); index++)
-                        if (id == ql.listComputer.at(index).getIdStudent())
-                        {
-                          used = true;
-                          break;
-                        }
-                      if (!used)
-                      {
-                        isValid = true;
-                        message.setString("Register successfully");
-                        message.setPosition(240, 240);
-                      }
-                      else
-                      {
-                        message.setString("Student is using computer");
-                        message.setPosition(220, 240);
-                      }
-                    }
+                    notice = ql.Register(i, id, name);
+                    message.setString(notice.msg);
+                    message.setPosition(notice.posX, notice.posY);
                     break;
                   case SELECTBUTTONEXIT:
                     registerWindow.close();
@@ -241,20 +220,8 @@ void Func1()
               registerWindow.draw(line);
               registerWindow.draw(message);
               registerWindow.display();
-              if (isValid)
+              if (notice.code)
               {
-                time_t now = time(0);
-                if (ql.listStudent.indexOf(id) == -1)
-                {
-                  ql.listStudent.add(Student(id, name));
-                  ql.dbStudent.Create(Student(id, name));
-                }
-                ql.listComputer.at(i).setStatus("using");
-                ql.dbComputer.Update(i, "status", "using");
-                ql.listComputer.at(i).setIdStudent(id);
-                ql.dbComputer.Update(i, "idStudent", id.c_str());
-                ql.listRegister.add(Record(ql.listComputer.at(i).getId(), id, now, 0));
-                ql.dbRegister.Create(Record(ql.listComputer.at(i).getId(), id, now, 0));
                 clock.restart();
                 while (clock.getElapsedTime().asSeconds() <= 1)
                   selected = 0;
@@ -295,10 +262,10 @@ void Func2()
   line.setPosition((__id.getPosition().x + __id.getGlobalBounds().width + 5), 154);
   line.setFillColor(Color::Black);
   int selected = 1;
-  bool isValid = false;
+  notification notice;
   while (unRegisterWindow.isOpen())
   {
-    isValid = false;
+    notice.code = 0;
     Vector2i posUnRegister = Mouse::getPosition(unRegisterWindow);
     posX.setString(to_string(posUnRegister.x));
     posY.setString(to_string(posUnRegister.y));
@@ -341,41 +308,9 @@ void Func2()
         case SELECTBUTTONOKE:
           selected = SELECT0;
           line.setFillColor(Color::Transparent);
-          if (id == "")
-          {
-            message.setString("Please enter student id");
-            message.setPosition(230, 240);
-          }
-          else if (ql.listStudent.indexOf(id) == -1)
-          {
-            message.setString("Student id do not exist");
-            message.setPosition(230, 240);
-          }
-          else
-          {
-            bool used = false;
-            for (int i = 0; i < ql.listRegister.length(); i++)
-            {
-              if (id == ql.listRegister.at(i).getIdStudent() && ql.listRegister.at(i).getUnRegisteredAt() == 0)
-              {
-                used = true;
-                indexRegister = i;
-                idComputer = ql.listRegister.at(i).getIdComputer();
-                break;
-              }
-            }
-            if (used)
-            {
-              isValid = true;
-              message.setString("Unregister successfully");
-              message.setPosition(240, 240);
-            }
-            else
-            {
-              message.setString("Student is not using computer");
-              message.setPosition(190, 240);
-            }
-          }
+          notice = ql.Unregister(id);
+          message.setString(notice.msg);
+          message.setPosition(notice.posX, notice.posY);
           break;
         case SELECTBUTTONEXIT:
           unRegisterWindow.close();
@@ -394,19 +329,8 @@ void Func2()
     unRegisterWindow.draw(posY);
     unRegisterWindow.display();
     time_t now = time(0);
-    if (isValid)
+    if (notice.code)
     {
-      time_t now = time(0);
-      int indexComputer = ql.listComputer.indexOf(idComputer);
-      long long timeUsed = ql.listComputer.at(indexComputer).getTimeUsed() + (now - ql.listRegister.at(indexRegister).getRegisteredAt());
-      ql.listRegister.at(indexRegister).setUnRegisterAt(now);     // update unRegistered time
-      ql.dbRegister.Update(indexRegister, "unRegisteredAt", now); // save database
-      ql.listComputer.at(indexComputer).setTimeUsed(timeUsed);    // update timeUsed Computer
-      ql.dbComputer.Update(indexComputer, "timeUsed", timeUsed);  // save database
-      ql.listComputer.at(indexComputer).setIdStudent("");
-      ql.dbComputer.Update(indexComputer, "idStudent", "");
-      ql.listComputer.at(indexComputer).setStatus("not_using");
-      ql.dbComputer.Update(indexComputer, "status", "not_using");
       clock.restart();
       while (clock.getElapsedTime().asSeconds() <= 1)
         selected = 0;
@@ -439,10 +363,10 @@ void Func3()
   line.setPosition((__id.getPosition().x + __id.getGlobalBounds().width + 5), 104);
   line.setFillColor(Color::Black);
   int selected = 1;
-  bool isValid = false;
+  notification notice;
   while (createWindow.isOpen())
   {
-    isValid = false;
+    notice.code = 0;
     Vector2i posCreate = Mouse::getPosition(createWindow);
     posX.setString(to_string(posCreate.x));
     posY.setString(to_string(posCreate.y));
@@ -490,27 +414,9 @@ void Func3()
         case SELECTBUTTONOKE:
           selected = SELECT0;
           line.setFillColor(Color::Transparent);
-          if (id == "")
-          {
-            message.setString("Please enter computer id");
-            message.setPosition(220, 240);
-          }
-          else if (ql.listComputer.indexOf(id) == -1 && name == "")
-          {
-            message.setString("Please enter computer name");
-            message.setPosition(200, 240);
-          }
-          else if (ql.listComputer.indexOf(id) != -1)
-          {
-            message.setString("Computer id exists");
-            message.setPosition(270, 240);
-          }
-          else
-          {
-            isValid = true;
-            message.setString("Create successfully");
-            message.setPosition(250, 240);
-          }
+          notice = ql.Create(id, name);
+          message.setString(notice.msg);
+          message.setPosition(notice.posX, notice.posY);
           break;
         case SELECTBUTTONEXIT:
           createWindow.close();
@@ -528,11 +434,8 @@ void Func3()
     createWindow.draw(posY);
     createWindow.draw(message);
     createWindow.display();
-    if (isValid)
+    if (notice.code)
     {
-      Computer computer(id, name, "not_using", "", 0);
-      ql.listComputer.add(computer);
-      ql.dbComputer.Create(computer);
       clock.restart();
       while (clock.getElapsedTime().asSeconds() <= 1)
         selected = 0;
@@ -565,10 +468,10 @@ void Func4()
   line.setPosition((__id.getPosition().x + __id.getGlobalBounds().width + 5), 104);
   line.setFillColor(Color::Black);
   int selected = 1;
-  bool isValid = false;
+  notification notice;
   while (updateWindow.isOpen())
   {
-    isValid = false;
+    notice.code = 0;
     Vector2i posUpdate = Mouse::getPosition(updateWindow);
     posX.setString(to_string(posUpdate.x));
     posY.setString(to_string(posUpdate.y));
@@ -616,27 +519,9 @@ void Func4()
         case SELECTBUTTONOKE:
           selected = SELECT0;
           line.setFillColor(Color::Transparent);
-          if (id == "")
-          {
-            message.setString("Please enter computer id");
-            message.setPosition(220, 240);
-          }
-          else if (ql.listComputer.indexOf(id) == -1)
-          {
-            message.setString("Computer id do not exist");
-            message.setPosition(220, 240);
-          }
-          else if (ql.listComputer.indexOf(id) != -1 && name == "")
-          {
-            message.setString("Please enter computer name");
-            message.setPosition(200, 240);
-          }
-          else
-          {
-            isValid = true;
-            message.setString("Update successfully");
-            message.setPosition(245, 240);
-          }
+          notice = ql.Update(id, name);
+          message.setString(notice.msg);
+          message.setPosition(notice.posX, notice.posY);
           break;
         case SELECTBUTTONEXIT:
           updateWindow.close();
@@ -654,11 +539,8 @@ void Func4()
     updateWindow.draw(posY);
     updateWindow.draw(message);
     updateWindow.display();
-    if (isValid)
+    if (notice.code)
     {
-      int index = ql.listComputer.indexOf(id);
-      ql.listComputer.at(index).setName(name);
-      ql.dbComputer.Update(index, "name", name.c_str());
       clock.restart();
       while (clock.getElapsedTime().asSeconds() <= 1)
         selected = 0;
@@ -688,10 +570,10 @@ void Func5()
   line.setPosition((__id.getPosition().x + __id.getGlobalBounds().width + 5), 154);
   line.setFillColor(Color::Black);
   int selected = 1;
-  bool isValid = false;
+  notification notice;
   while (deleteWindow.isOpen())
   {
-    isValid = false;
+    notice.code = 0;
     Vector2i posDelete = Mouse::getPosition(deleteWindow);
     posX.setString(to_string(posDelete.x));
     posY.setString(to_string(posDelete.y));
@@ -733,39 +615,9 @@ void Func5()
         case SELECTBUTTONOKE:
           selected = SELECT0;
           line.setFillColor(Color::Transparent);
-          if (id == "")
-          {
-            message.setString("Please enter computer id");
-            message.setPosition(220, 240);
-          }
-          else if (ql.listComputer.indexOf(id) == -1)
-          {
-            message.setString("Computer id do not exist");
-            message.setPosition(220, 240);
-          }
-          else
-          {
-            bool used = false;
-            for (int i = 0; i < ql.listRegister.length(); i++)
-            {
-              if (id == ql.listRegister.at(i).getIdComputer() && ql.listRegister.at(i).getUnRegisteredAt() == 0)
-              {
-                used = true;
-                break;
-              }
-            }
-            if (!used)
-            {
-              isValid = true;
-              message.setString("Delete successfully");
-              message.setPosition(255, 240);
-            }
-            else
-            {
-              message.setString("Computer is being used. Can not delete");
-              message.setPosition(120, 240);
-            }
-          }
+          notice = ql.Delete(id);
+          message.setString(notice.msg);
+          message.setPosition(notice.posX, notice.posY);
           break;
         case SELECTBUTTONEXIT:
           deleteWindow.close();
@@ -782,22 +634,8 @@ void Func5()
     deleteWindow.draw(posY);
     deleteWindow.draw(message);
     deleteWindow.display();
-    if (isValid)
+    if (notice.code)
     {
-      int index = ql.listComputer.indexOf(id);
-      ql.listComputer.removeAt(index);
-      ql.dbComputer.Delete(index);
-      int i = 0;
-      while (i < ql.listRegister.length())
-      {
-        if (ql.listRegister.at(i).getIdComputer() == id)
-        {
-          ql.listRegister.removeAt(i);
-          ql.dbRegister.Delete(i);
-        }
-        else
-          i++;
-      }
       clock.restart();
       while (clock.getElapsedTime().asSeconds() <= 1)
         selected = 0;
@@ -1042,10 +880,6 @@ void Form8(string *listId, string *listUserId, string *listUserName, string *lis
             message.setString("Please enter date");
             message.setPosition(270, 240);
           }
-          // else if (ql.listComputer.indexOf(id) == -1 && name == "")
-          // {
-
-          // }
           else
           {
             isValid = true;

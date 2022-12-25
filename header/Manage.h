@@ -7,6 +7,13 @@
 using namespace std;
 using namespace rapidjson;
 
+struct notification
+{
+  string msg;
+  int posX, posY;
+  int code = 0;
+};
+
 class Manage
 {
 public:
@@ -20,11 +27,11 @@ public:
 public:
   Manage();
   ~Manage();
-  void Create();
-  void Update();
-  void Delete();
-  void Register();
-  void Unregister();
+  notification Create(string id, string name);
+  notification Update(string id, string name);
+  notification Delete(string id);
+  notification Register(int i, string id, string name);
+  notification Unregister(string id);
   void ShowComputer(int index);
   void ShowAllComputer();
   void ShowTime();
